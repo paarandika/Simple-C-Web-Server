@@ -10,12 +10,38 @@
 char headOK[]=
 "HTTP/1.1 200 OK\r\n"
 "Server: RandServer\r\n";
-char headContentTypeHTML[]=
-"Content-Type: text/html; charset=utf-8\r\n\r\n";
-char headEnd[]=
-"Transfer-Encoding: chunked\r\n"
-"Connection: keep-alive\r\n\r\n";
 
+
+int getLen(char * fileName){
+  struct stat st;
+  stat(fileName, &st);
+  return st.st_size;
+}
+
+char * getType(char * type){
+  char headContentTypeHTML[]=
+  "Content-Type: text/html; charset=utf-8\r\n\r\n\0";
+  char headContentTypePNG[]=
+  "Content-Type: image/png; charset=utf-8\r\n\r\n\0";
+  char headContentTypeJPEG[]=
+  "Content-Type: image/jpeg; charset=utf-8\r\n\r\n\0";
+  char headContentTypeCSS[]=
+  "Content-Type: text/css; charset=utf-8\r\n\r\n\0";
+  char headContentTypeCSS1[]=
+  "Content-Type: text/css; charset=utf-8\r\n\r\n\0";
+
+  if (!strncmp(type, ".jpeg",5)){
+    return headContentTypeJPEG;
+  }else if (!strncmp(type, ".png",4)){
+    return headContentTypePNG;
+  }else if (!strncmp(type, ".js",3)){
+    return headContentTypeCSS;
+  }else if (!strncmp(type, ".css",4)){
+    return headContentTypeCSS1;
+  }else{
+    return headContentTypeHTML;
+  }
+}
 
 int main(){
   struct sockaddr_in serverAddr, clientAddr;
@@ -52,7 +78,7 @@ int main(){
       perror("Connection failed");
       continue;
     }
-    printf("%s%d\n","Client connected");
+    printf("%s\n","Client connected");
 
     if (!fork()){
       //Child
@@ -78,14 +104,17 @@ int main(){
         fileName[k-5]='\0';
         ext[extL-1]='\0';
 
+        int size = getLen(fileName);
+        printf("%d\n", size);
+
         int fdFile=open(fileName, O_RDONLY);
         write(fdClient, headOK, strlen(headOK));
-        write(fdClient, headContentTypeHTML, strlen(headContentTypeHTML));
-        // write(fdClient, headEnd, strlen(headEnd));
-        sendfile(fdClient, fdFile, NULL, 300);
+        write(fdClient, getType(ext), strlen(getType(ext)));
+        // write(fdClient, "hello world\n", 12);
+        sendfile(fdClient, fdFile, NULL, size);
+        close(fdFile);
         printf("file name : %s and ext : %s\n", fileName, ext);
       }
-      // write(fdClient, "hello world\n", 12);
       close(fdClient);
       exit(0);
     }
@@ -93,13 +122,4 @@ int main(){
 
   }
   return 0;
-}
-
-char* getDate() {
-  time_t t = time(NULL);
-  struct tm *tm = gmtime(&t);
-  char date[32];
-  strcpy(&date, asctime(tm));
-  date[24]=' ';
-  return strcat(&date, "GMT");
 }
