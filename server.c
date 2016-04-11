@@ -10,6 +10,9 @@
 char headOK[]=
 "HTTP/1.1 200 OK\r\n"
 "Server: RandServer\r\n";
+char headNotFound[]=
+"HTTP/1.1 404 Not Found\r\n"
+"Server: RandServer\r\n\r\n\0";
 
 
 int getLen(char * fileName){
@@ -86,6 +89,7 @@ int main(){
       memset(buf, 0, 2048);
       read(fdClient, buf, 2047);
       printf("%s\n", buf);
+
       if (!strncmp(buf, "GET", 3)){
         char fileName[64], ext[6];
         int k=5;
@@ -104,17 +108,25 @@ int main(){
         fileName[k-5]='\0';
         ext[extL-1]='\0';
 
-        int size = getLen(fileName);
-        printf("%d\n", size);
-
         int fdFile=open(fileName, O_RDONLY);
-        write(fdClient, headOK, strlen(headOK));
-        write(fdClient, getType(ext), strlen(getType(ext)));
-        // write(fdClient, "hello world\n", 12);
-        sendfile(fdClient, fdFile, NULL, size);
-        close(fdFile);
-        printf("file name : %s and ext : %s\n", fileName, ext);
+
+        if (fdFile<0){
+          write(fdClient, headNotFound, strlen(headNotFound));
+
+          printf("file name : %s and ext : %s and fd : %d\n", fileName, ext, fdFile);
+        }else{
+          int size =0;
+          size = getLen(fileName);
+          printf("size of file %s : %d\n", fileName, size);
+
+          write(fdClient, headOK, strlen(headOK));
+          write(fdClient, getType(ext), strlen(getType(ext)));
+          sendfile(fdClient, fdFile, NULL, size);
+          close(fdFile);
+          printf("file name : %s and ext : %s and fd : %d\n", fileName, ext, fdFile);
+        }
       }
+
       close(fdClient);
       exit(0);
     }
