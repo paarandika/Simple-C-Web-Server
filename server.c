@@ -22,116 +22,146 @@ int getLen(char * fileName){
 }
 
 char * getType(char * type){
-  char headContentTypeHTML[]=
-  "Content-Type: text/html; charset=utf-8\r\n\r\n\0";
-  char headContentTypePNG[]=
-  "Content-Type: image/png; charset=utf-8\r\n\r\n\0";
-  char headContentTypeJPEG[]=
-  "Content-Type: image/jpeg; charset=utf-8\r\n\r\n\0";
-  char headContentTypeCSS[]=
-  "Content-Type: text/css; charset=utf-8\r\n\r\n\0";
-  char headContentTypeCSS1[]=
-  "Content-Type: text/css; charset=utf-8\r\n\r\n\0";
+    char headContentTypeHTML[]=
+    "Content-Type: text/html; charset=utf-8\r\n\r\n\0";
+    char headContentTypePNG[]=
+    "Content-Type: image/png; charset=utf-8\r\n\r\n\0";
+    char headContentTypeJPEG[]=
+    "Content-Type: image/jpeg; charset=utf-8\r\n\r\n\0";
+    char headContentTypeCSS[]=
+    "Content-Type: text/css; charset=utf-8\r\n\r\n\0";
+    char headContentTypeCSS1[]=
+    "Content-Type: text/css; charset=utf-8\r\n\r\n\0";
 
-  if (!strncmp(type, ".jpeg",5)){
-    return headContentTypeJPEG;
-  }else if (!strncmp(type, ".png",4)){
-    return headContentTypePNG;
-  }else if (!strncmp(type, ".js",3)){
-    return headContentTypeCSS;
-  }else if (!strncmp(type, ".css",4)){
-    return headContentTypeCSS1;
-  }else{
-    return headContentTypeHTML;
-  }
+    if (!strncmp(type, ".jpeg",5)){
+        return headContentTypeJPEG;
+    } else if (!strncmp(type, ".png",4)){
+        return headContentTypePNG;
+    } else if (!strncmp(type, ".js",3)){
+        return headContentTypeCSS;
+    } else if (!strncmp(type, ".css",4)){
+        return headContentTypeCSS1;
+    } else{
+        return headContentTypeHTML;
+    }
 }
 
 int main(){
-  struct sockaddr_in serverAddr, clientAddr;
-  int fdServer, fdClient;
-  char buf[2048];
-  socklen_t addrlen=sizeof(clientAddr);
+    struct sockaddr_in serverAddr, clientAddr;
+    int fdServer, fdClient;
+    char buf[2048];
+    socklen_t addrlen=sizeof(clientAddr);
 
-  fdServer=socket(AF_INET, SOCK_STREAM,0);
-  if (fdServer<0){
-    perror("Socket creation failed\n");
-    exit(1);
-  }
-
-  setsockopt(fdServer, SOL_SOCKET, SO_REUSEADDR, 1, sizeof(int));
-
-  serverAddr.sin_family=AF_INET;
-  serverAddr.sin_addr.s_addr=INADDR_ANY;
-  serverAddr.sin_port= htons(3000);
-
-  if(bind(fdServer, (struct sockaddr *) &serverAddr, sizeof(serverAddr))==-1){
-    perror("Binding failed");
-    close(fdServer);
-    exit(1);
-  }
-  if (listen(fdServer,10)==-1){
-    perror("Listen failed");
-    close(fdServer);
-    exit(1);
-  }
-
-  while (1) {
-    fdClient=accept(fdServer, (struct sockaddr*) &clientAddr, &addrlen);
-    if (fdClient==-1){
-      perror("Connection failed");
-      continue;
+    fdServer=socket(AF_INET, SOCK_STREAM,0);
+    if (fdServer<0){
+        perror("Socket creation failed\n");
+        exit(1);
     }
-    printf("%s\n","Client connected");
 
-    if (!fork()){
-      //Child
-      close(fdServer);
-      memset(buf, 0, 2048);
-      read(fdClient, buf, 2047);
-      printf("%s\n", buf);
+    setsockopt(fdServer, SOL_SOCKET, SO_REUSEADDR, 1, sizeof(int));
 
-      if (!strncmp(buf, "GET", 3)){
-        char fileName[64], ext[6];
-        int k=5;
-        int extL=0;
-        while(buf[k]!=' '){
-          fileName[k-5]=buf[k];
-          k=k+1;
-          if (buf[k]=='.'){
-            extL=1;
-          }
-          if (extL){
-            ext[extL-1]=buf[k];
-            extL=extL+1;
-          }
-        }
-        fileName[k-5]='\0';
-        ext[extL-1]='\0';
+    serverAddr.sin_family=AF_INET;
+    serverAddr.sin_addr.s_addr=INADDR_ANY;
+    serverAddr.sin_port= htons(3000);
 
-        int fdFile=open(fileName, O_RDONLY);
-
-        if (fdFile<0){
-          write(fdClient, headNotFound, strlen(headNotFound));
-
-          printf("file name : %s and ext : %s and fd : %d\n", fileName, ext, fdFile);
-        }else{
-          int size =0;
-          size = getLen(fileName);
-          printf("size of file %s : %d\n", fileName, size);
-
-          write(fdClient, headOK, strlen(headOK));
-          write(fdClient, getType(ext), strlen(getType(ext)));
-          sendfile(fdClient, fdFile, NULL, size);
-          close(fdFile);
-          printf("file name : %s and ext : %s and fd : %d\n", fileName, ext, fdFile);
-        }
-      }
-
-      close(fdClient);
-      exit(0);
+    if(bind(fdServer, (struct sockaddr *) &serverAddr, sizeof(serverAddr))==-1){
+        perror("Binding failed");
+        close(fdServer);
+        exit(1);
     }
-      close(fdClient);
+    if (listen(fdServer,10)==-1){
+        perror("Listen failed");
+        close(fdServer);
+        exit(1);
+    }
 
-  }
-  return 0;
+    while (1) {
+        fdClient=accept(fdServer, (struct sockaddr*) &clientAddr, &addrlen);
+        if (fdClient==-1){
+            perror("Connection failed");
+            continue;
+        }
+
+        printf("%s\n","Client connected");
+
+        if (!fork()){
+            //Child
+            close(fdServer);
+            memset(buf, 0, 2048);
+            read(fdClient, buf, 2047);
+            printf("%s\n", buf);
+
+            if (!strncmp(buf, "GET", 3)){
+                char fileName[64], ext[6];
+                int k=5;
+                int extL=0;
+                while(buf[k]!=' '){
+                    fileName[k-5]=buf[k];
+                    k=k+1;
+                    if (buf[k]=='.'){
+                        extL=1;
+                    }
+                    if (extL){
+                        ext[extL-1]=buf[k];
+                        extL=extL+1;
+                    }
+                }
+                fileName[k-5]='\0';
+                ext[extL-1]='\0';
+
+                int fdFile=open(fileName, O_RDONLY);
+
+                if (fdFile < 0) {
+                    write(fdClient, headNotFound, strlen(headNotFound));
+                    printf("file name : %s and ext : %s and fd : %d\n", fileName, ext, fdFile);
+                } else {
+                    int size =0;
+                    size = getLen(fileName);
+                    printf("size of file %s : %d\n", fileName, size);
+                    write(fdClient, headOK, strlen(headOK));
+
+                    if (!strncmp(ext, ".php", 4)){
+                        int status;
+                        int link[2];
+                        char * arg[3]={"php5-cgi", fileName, 0};
+                        if (pipe(link)==-1)
+                        perror("pipe");
+                        int pid=fork();
+
+                        if (!pid) {
+                            //child of child
+                            dup2 (link[1], 1);
+                            close(link[0]);
+                            close(link[1]);
+                            execvp(arg[0], arg);
+                        } else {
+                            waitpid(pid, &status,0);
+                            close(link[1]);
+
+                            char reading_buf[1];
+                            while(read(link[0], reading_buf, 1) > 0) {
+                                write(fdClient, reading_buf, 1);
+                            }
+                            close(link[0]);
+                            close(fdFile);
+                        }
+
+                    } else {
+                        int size =0;
+                        size = getLen(fileName);
+                        write(fdClient, getType(ext), strlen(getType(ext)));
+                        sendfile(fdClient, fdFile, NULL, size);
+                        close(fdFile);
+                    }
+                    printf("file name : %s and ext : %s and fd : %d\n", fileName, ext, fdFile);
+                }
+            }
+
+            close(fdClient);
+            exit(0);
+        }
+        close(fdClient);
+
+    }
+    return 0;
 }
