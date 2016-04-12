@@ -14,6 +14,19 @@ char headNotFound[]=
 "HTTP/1.1 404 Not Found\r\n"
 "Server: RandServer\r\n\r\n\0";
 
+char headContentTypeHTML[]=
+"Content-Type: text/html; charset=utf-8\r\n\r\n\0";
+char headContentTypePNG[]=
+"Content-Type: image/png; charset=utf-8\r\n\r\n\0";
+char headContentTypeJPEG[]=
+"Content-Type: image/jpeg; charset=utf-8\r\n\r\n\0";
+char headContentTypeJS[]=
+"Content-Type: text/javascript; charset=utf-8\r\n\r\n\0";
+char headContentTypeCSS[]=
+"Content-Type: text/css; charset=utf-8\r\n\r\n\0";
+char headContentTypeMP4[]=
+"Content-Type: video/mp4; charset=utf-8\r\n\r\n\0";
+
 
 int getLen(char * fileName){
   struct stat st;
@@ -22,25 +35,16 @@ int getLen(char * fileName){
 }
 
 char * getType(char * type){
-    char headContentTypeHTML[]=
-    "Content-Type: text/html; charset=utf-8\r\n\r\n\0";
-    char headContentTypePNG[]=
-    "Content-Type: image/png; charset=utf-8\r\n\r\n\0";
-    char headContentTypeJPEG[]=
-    "Content-Type: image/jpeg; charset=utf-8\r\n\r\n\0";
-    char headContentTypeCSS[]=
-    "Content-Type: text/css; charset=utf-8\r\n\r\n\0";
-    char headContentTypeCSS1[]=
-    "Content-Type: text/css; charset=utf-8\r\n\r\n\0";
-
     if (!strncmp(type, ".jpeg",5)){
         return headContentTypeJPEG;
     } else if (!strncmp(type, ".png",4)){
         return headContentTypePNG;
     } else if (!strncmp(type, ".js",3)){
-        return headContentTypeCSS;
+        return headContentTypeJS;
     } else if (!strncmp(type, ".css",4)){
-        return headContentTypeCSS1;
+        return headContentTypeCSS;
+    }else if (!strncmp(type, ".mp4",4)){
+        return headContentTypeMP4;
     } else{
         return headContentTypeHTML;
     }
