@@ -139,13 +139,13 @@ int main(){
                             close(link[1]);
                             execvp(arg[0], arg);
                         } else {
-                            waitpid(pid, &status,0);
                             close(link[1]);
-
                             char reading_buf[1];
+                            
                             while(read(link[0], reading_buf, 1) > 0) {
                                 write(fdClient, reading_buf, 1);
                             }
+                            waitpid(pid, &status,0);
                             close(link[0]);
                             close(fdFile);
                         }
