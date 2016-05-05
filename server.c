@@ -96,28 +96,39 @@ int main(){
             printf("%s\n", buf);
 
             if (!strncmp(buf, "GET", 3)){
-                char fileName[64], ext[6];
+                char fileName[64], ext[6], arg[255];
                 int k=5;
                 int extL=0;
+                int argL=0;
                 while(buf[k]!=' '){
-                    fileName[k-5]=buf[k];
+                    if (buf[k]=='?'){
+                        argL=1;
+                    }
+                    if (!argL) {
+                        fileName[k-5]=buf[k];
+                    }
                     k=k+1;
                     if (buf[k]=='.'){
                         extL=1;
                     }
-                    if (extL){
+                    if (extL && !argL){
                         ext[extL-1]=buf[k];
                         extL=extL+1;
+                    }
+                    if (argL) {
+                        arg[argL-1]=buf[k];
+                        argL=argL+1;
                     }
                 }
                 fileName[k-5]='\0';
                 ext[extL-1]='\0';
+                arg[argL-1]='\0';
 
                 int fdFile=open(fileName, O_RDONLY);
 
                 if (fdFile < 0) {
                     write(fdClient, headNotFound, strlen(headNotFound));
-                    printf("file name : %s and ext : %s and fd : %d\n", fileName, ext, fdFile);
+                    printf("file name : %s and ext : %s and arg : %s and fd : %d\n", fileName, ext, arg, fdFile);
                 } else {
                     int size =0;
                     size = getLen(fileName);
@@ -127,7 +138,7 @@ int main(){
                     if (!strncmp(ext, ".php", 4)){
                         int status;
                         int link[2];
-                        char * arg[3]={"php5-cgi", fileName, 0};
+                        char * args[4]={"php5-cgi", fileName, arg, 0};
                         if (pipe(link)==-1)
                         perror("pipe");
                         int pid=fork();
@@ -137,11 +148,11 @@ int main(){
                             dup2 (link[1], 1);
                             close(link[0]);
                             close(link[1]);
-                            execvp(arg[0], arg);
+                            execvp(args[0], args);
                         } else {
                             close(link[1]);
                             char reading_buf[1];
-                            
+
                             while(read(link[0], reading_buf, 1) > 0) {
                                 write(fdClient, reading_buf, 1);
                             }
@@ -157,7 +168,7 @@ int main(){
                         sendfile(fdClient, fdFile, NULL, size);
                         close(fdFile);
                     }
-                    printf("file name : %s and ext : %s and fd : %d\n", fileName, ext, fdFile);
+                    printf("file name : %s and ext : %s and arg : %s and fd : %d\n", fileName, ext, arg, fdFile);
                 }
             }
 
